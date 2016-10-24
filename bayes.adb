@@ -6,14 +6,17 @@ use Ada.Text_IO, Ada.Integer_Text_IO, Ada.Numerics.Float_Random;
 
 procedure bayes is
    type actArr is array (0..99) of Natural;
+   type doorArr is array (0..99) of Boolean;
    action_char : Character;
    n : Natural := 0;
    belief : funcs.uniDist;
    actions : actArr;
+   doorStates : doorArr;
 
 begin
 
    funcs.Initialise;
+   doorStates(0) := funcs.getDoorStatus;
 
    while(TRUE) loop
 
@@ -58,9 +61,15 @@ begin
             Put_Line("Invalid action");
             n := n - 1;
       end case;
+
+      --get true door state
+      doorStates(n) := funcs.getDoorStatus;
    end loop;
 
    belief := funcs.getBelief;
+
+   New_Line;
+   Put_Line("| Time  |      Belief      |     Measured      | Actual  | Action |");
 
    for I in 0..(n-1) loop
       Put("t = " & I'Img & "  -  ");
@@ -72,6 +81,12 @@ begin
       else
          Put("CLOSED");
       end if;
+      if(doorStates(I)) then
+         Put(" | OPEN  ");
+      else
+         Put(" | CLOSED");
+      end if;
+
       if(actions(I) = 1) then
          Put("  -  A: Try");
       elsif(actions(I) = 0) then
