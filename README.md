@@ -1,4 +1,5 @@
 # Recursive-State-Estimation
 Probabilistic Robotics book
 
-bayes.adb is the main file
+compile using: gnat make bayes.adb
+or the GPS IDE from libre.adacore.com
