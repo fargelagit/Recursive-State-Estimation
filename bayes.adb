@@ -33,6 +33,7 @@ begin
       Get(action_char);
 
       n := n + 1;		--iteration counter
+
       case action_char is
          when 'y' =>
             --yes

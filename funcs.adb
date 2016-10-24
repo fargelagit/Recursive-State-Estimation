@@ -149,10 +149,12 @@ package body funcs is
       --normaliser (eq. 2.49, 2.50, 2.51 combined)
       normaliser := 1.0 / ((zOpenOpen * postBelOpen) + (zOpenClosed * postBelClosed));
 
-      --New belief of door state is assigned according to eq. 2.48
-      belOpen(n)   := normaliser * zOpenOpen * postBelOpen;
-      belClosed(n) := normaliser * zOpenClosed * postBelClosed;
+      --New belief of door state is assigned
+      belOpen(n) := (if pastMStates(n)(0) = OPEN
+                     then normaliser * zOpenOpen * postBelOpen
+                     else normaliser * zOpenClosed * postBelOpen);
 
+      belClosed(n) := 1.0 - belOpen(n);
    end updateBelief;
 
    --returns the belief vector
