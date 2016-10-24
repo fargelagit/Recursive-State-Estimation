@@ -3,9 +3,9 @@ use Ada.Text_IO, Ada.Integer_Text_IO, Ada.Numerics.Float_Random;
 
 package funcs is
 
-   type doorState is (OPEN, CLOSED, PASS);
-   type doorAction is (TRY, DONT, PASS);
-   type chanceType is (Z, U, PASS);
+   type doorState is (OPEN, CLOSED);
+   type doorAction is (TRY, DONT);
+   type chanceType is (Z, U);
 
    type uniDist is array (0..99) of Uniformly_Distributed;
    type doorStates is array (0..1) of doorState;

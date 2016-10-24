@@ -67,7 +67,7 @@ begin
       Ada.Float_Text_IO.Put(belief(I), 1, 3 ,0);
       Put("  -  Measured: ");
       if(funcs.getMeasurement(I)) then
-         Put("OPEN");
+         Put("OPEN  ");
       else
          Put("CLOSED");
       end if;

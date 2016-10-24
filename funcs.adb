@@ -117,56 +117,34 @@ package body funcs is
       normaliser : Float;
       temp : Boolean;
    begin
-      pastMStates(n)(0) := updateMeasurement;
-      pastMStates(n)(1) := (if pastMStates(n)(0) = OPEN
-                            then CLOSED
-                            else OPEN);
-
       if (action = TRY) then
          --Tries to OPEN DOOR
          temp := openDoor;
       end if;
 
-      --Posterior belief of door being open (eq. 2.46 in the book)
+      --get new measurement
+      pastMStates(n)(0) := updateMeasurement;
+      pastMStates(n)(1) := (if pastMStates(n)(0) = OPEN
+                            then CLOSED
+                            else OPEN);
 
+      --Posterior belief of door being open (eq. 2.46 in the book)
       postBelOpen := (
                       (getProbability(
-                      pastMStates(n)(0),   --Xn:   Current measured state of door
+                      pastMStates(n)(0),
                       action,
-                      pastMStates(n-1)(0)) --Xn-1: Previous measured state of door
-                      * (if pastMStates(n)(0) = OPEN
-                        then belOpen(n-1)
-                        else belClosed(n-1))
+                      pastMStates(n-1)(0)) * belOpen(n-1)
                      )
                       + (getProbability(
-                        pastMStates(n)(0),   --Xn:   Current measured state of door
+                        pastMStates(n)(0),
                         action,
-                        pastMStates(n-1)(1)) --NOT Xn-1: Inverse previous measured state of door
-                        * (if pastMStates(n)(1) = OPEN
-                          then belOpen(n-1)
-                          else belClosed(n-1))
+                        pastMStates(n-1)(1)) * belClosed(n-1)
                        )
                      );
 
-      --Posterior belief of door being closed (eq. 2.47)
-      postBelClosed := (
-                        (getProbability(
-                        pastMStates(n)(1),   --NOT Xn: Inverse current measured state of door
-                        action,
-                        pastMStates(n-1)(0)) --Xn-1: Previous measured state of door
-                        * (if pastMStates(n-1)(0) = OPEN
-                          then belOpen(n-1)
-                          else belClosed(n-1))
-                       )
-                        + (getProbability(
-                          pastMStates(n)(1),   --NOT Xn: Inverse current measured state of door
-                          action,
-                          pastMStates(n-1)(1)) --NOT Xn-1: Inverse previous measured state of door
-                          * (if pastMStates(n)(1) = OPEN
-                            then belOpen(n-1)
-                            else belClosed(n-1))
-                         )
-                       );
+      --Posterior belief of door being closed
+      postBelClosed := 1.0 - postBelOpen;
+
 
       --normaliser (eq. 2.49, 2.50, 2.51 combined)
       normaliser := 1.0 / ((zOpenOpen * postBelOpen) + (zOpenClosed * postBelClosed));
@@ -174,6 +152,7 @@ package body funcs is
       --New belief of door state is assigned according to eq. 2.48
       belOpen(n)   := normaliser * zOpenOpen * postBelOpen;
       belClosed(n) := normaliser * zOpenClosed * postBelClosed;
+
    end updateBelief;
 
    --returns the belief vector
