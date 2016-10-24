@@ -8,9 +8,15 @@ package funcs is
    type chanceType is (Z, U, PASS);
 
    type uniDist is array (0..99) of Uniformly_Distributed;
+   type doorStates is array (0..1) of doorState;
+   type stateArr is array (0..99) of doorStates;
 
 
    procedure Initialise;
+
+   function getMeasurement(n : Natural) return Boolean;
+
+   function updateMeasurement return doorState;
 
    function openDoor return Boolean;
 
@@ -24,17 +30,22 @@ package funcs is
 
    function getDoorStatus return Boolean;
 
+
+
 private
    procedure setDoor;
 
    zOpenOpen, 					--probability of door being OPEN when MEASURED OPEN
    zClosedOpen,					--probability of door being OPEN when MEASURED CLOSED
-   zOpenClosed,					--probability of door OPENING when TRY
-   zClosedClosed : Uniformly_Distributed;	--probability of door NOT OPENING when TRY
+   zClosedClosed,				--probability of door CLOSED when MEASURED CLOSED
+   zOpenClosed : Uniformly_Distributed;		--probability of door CLOSED when MEASURED CLOSED
+
+   doorOpenChance : Uniformly_Distributed;	--Chance of successfully opening door
 
    Measurement : Uniformly_Distributed;		--Measurement of door state 1 = OPEN, 0 = CLOSED
 
    belOpen, belClosed : uniDist;
+   pastMStates : stateArr;
 
    Door : Boolean;
 

@@ -6,110 +6,109 @@ package body funcs is
       setDoor;
    end Initialise;
 
+   function getMeasurement(n : Natural) return Boolean is
+   begin
+      return (if pastMStates(n)(0) = OPEN
+              then TRUE
+              else FALSE);
+   end getMeasurement;
+
+   function updateMeasurement return doorState is
+      G : Generator;
+   begin
+      --If door is open
+      if (Door) then
+         --then calculate to see if we successfully measure it open
+         return (if Random(G) < zOpenOpen
+                 then OPEN
+                 else CLOSED);
+      else
+         --if door not open see if we successfully measure it closed
+         return (if Random(G) < zClosedClosed
+                 then CLOSED
+                 else OPEN);
+      end if;
+   end;
+
    procedure setDoor is
       G : Generator;
       dChance : Uniformly_Distributed;
-
+      C : Character;
    begin
       --various inputs
-      Put_Line("Input p(z = sense_open | x = is_open)");
-      Ada.Float_Text_IO.Get(zOpenOpen);
-      zClosedOpen := 1.0 - zOpenOpen;
-      Put_Line("Input p(z = sense_closed | x = is_closed)");
-      Ada.Float_Text_IO.Get(zOpenClosed);
-      zClosedClosed := 1.0 - zOpenClosed;
+      Put_Line("Use default values? (y, n)");
+      Get(C);
+      if(C /= 'y') then
+         Put_Line("Input p(z = sense_open | x = is_open)");
+         Ada.Float_Text_IO.Get(zOpenOpen);
+         zClosedOpen := 1.0 - zOpenOpen;
+         Put_Line("Input p(z = sense_closed | x = is_closed)");
+         Ada.Float_Text_IO.Get(zClosedClosed);
+         zOpenClosed := 1.0 - zClosedClosed;
 
-      Put_Line("Input initial belief");
-      Ada.Float_Text_IO.Get(belOpen(0));
-      belClosed(0) := 1.0 - belOpen(0);
+         Put_Line("Input chance of successfully opening door if tried");
+         Ada.Float_Text_IO.Get(doorOpenChance);
+
+         Put_Line("Input initial belief");
+         Ada.Float_Text_IO.Get(belOpen(0));
+         belClosed(0) := 1.0 - belOpen(0);
+      else
+         zOpenOpen := 0.6;
+         zClosedOpen := 0.4;
+         zClosedClosed := 0.8;
+         zOpenClosed := 0.2;
+         doorOpenChance := 0.8;
+         belOpen(0) := 0.5;
+         belClosed(0) := 0.5;
+      end if;
 
       Reset(G);
       dChance := Random(G);
       Door := (dChance < belOpen(0));	--sets the actual state of the door
+
+      pastMStates(0)(0) := updateMeasurement;
+      pastMStates(0)(1) := (if pastMStates(0)(0) = OPEN
+                            then CLOSED
+                            else OPEN);
    end setDoor;
 
    function openDoor return Boolean is
       G : Generator;
    begin
       Reset(G);
-      if (Random(G) < zClosedClosed) then
+      if (Random(G) < doorOpenChance) then
          --if successful
          if(Door) then
             --and door open
             --do nothing
-            return false;
+            return FALSE;
          else
             --and door closed
             --open door
-            Door := True;
-            return true;
+            Door := TRUE;
+            return TRUE;
          end if;
       else
          --do nothing
-         return false;
+         return FALSE;
       end if;
    end openDoor;
+
 
    -- getProbability = p(Xn | Un, Xn-1)
    function getProbability(chance : doorState;
                            action : doorAction;
                            state : doorState) return Uniformly_Distributed is
    begin
-      case action is
-         when TRY =>
-            --getProbability = p(Xn | TRY, Xn-1)
-            case chance is
-               when OPEN =>
-                  --getProbability = p(OPEN | TRY, Xn-1)
-                  if (state = OPEN) then
-                     --getProbability = p(OPEN | TRY, OPEN)
-                     return 1.0;
-                  else
-                     --getProbability = p(OPEN | TRY, CLOSED)
-                     return zOpenClosed;
-                  end if;
-               when CLOSED =>
-                  --getProbability = p(CLOSED | TRY, Xn-1)
-                  if (state = OPEN) then
-                     --getProbability = p(CLOSED | TRY, OPEN)
-                     return 0.0;
-                  else
-                     --getProbability = p(CLOSED | TRY, CLOSED)
-                     return zClosedClosed;
-                  end if;
-               when others =>
-                  --catch case
-                  return 0.0;
-            end case;
-         when DONT =>
-            --getProbability = p(Xn | DONT, Xn-1)
-            case chance is
-               when OPEN =>
-                  --getProbability = p(OPEN | DONT, Xn-1)
-                  if (state = OPEN) then
-                     --getProbability = p(OPEN | DONT, OPEN)
-                     return 1.0;
-                  else
-                     --getProbability = p(OPEN | DONT, CLOSED)
-                     return 0.0;
-                  end if;
-               when CLOSED =>
-                  --getProbability = p(CLOSED | DONT, Xn-1)
-                  if (state = OPEN) then
-                     --getProbability = p(CLOSED | DONT, OPEN)
-                     return 0.0;
-                  else
-                     --getProbability = p(CLOSED | DONT, CLOSED)
-                     return 1.0;
-                  end if;
-               when others =>
-                  --catch case
-                  return 0.0;
-            end case;
-         when others =>
-            --catch case
-            return 0.0;
-      end case;
+      if (chance = CLOSED and state = CLOSED and action = TRY) then
+         return zOpenClosed;   --default 0.2
+      elsif (chance = OPEN and state = CLOSED and action = TRY) then
+         return zClosedClosed; --default 0.8
+      elsif (chance = state) then
+         return 1.0;
+      else
+         return 0.0;
+      end if;
    end getProbability;
 
    procedure updateBelief(n : Natural; action : doorAction) is
@@ -118,45 +117,66 @@ package body funcs is
       normaliser : Float;
       temp : Boolean;
    begin
-      --TRY TO OPEN DOOR
-      --CALLED IN bayes PROCEDURE
+      pastMStates(n)(0) := updateMeasurement;
+      pastMStates(n)(1) := (if pastMStates(n)(0) = OPEN
+                            then CLOSED
+                            else OPEN);
+
       if (action = TRY) then
-         temp := openDoor;	--Tries to OPEN DOOR
-
-         --Posterior belief of door being open (eq. 2.46 in the book)
-         postBelOpen := (getProbability(OPEN, TRY, OPEN) * belOpen(n-1))
-           + (getProbability(OPEN, TRY, CLOSED) * belClosed(n-1));
-
-         --Posterior belief of door being closed (eq. 2.47)
-         postBelClosed := (getProbability(CLOSED, TRY, OPEN) * belOpen(n-1))
-           + (getProbability(CLOSED, TRY, CLOSED) * belClosed(n-1));
-
-         --normaliser (eq. 2.49, 2.50, 2.51 combined)
-         normaliser := 1.0 / ((zOpenOpen * postBelOpen) + (zClosedClosed * postBelClosed));
-
-         --New belief of door state is assigned according to eq. 2.48
-         belOpen(n)   := normaliser * zOpenOpen * postBelOpen;
-         belClosed(n) := normaliser * zClosedClosed * postBelClosed;
-      else
-
-         --Posterior belief of door being open (eq. 2.46 in the book)
-         postBelOpen := (getProbability(OPEN, DONT, OPEN) * belOpen(n-1)) --	___
-           + (getProbability(OPEN, DONT, CLOSED) * belClosed(n-1));	--	bel(Xn = is_open)
-
-         --Posterior belief of door being closed (eq. 2.47)
-         postBelClosed := (getProbability(CLOSED, DONT, OPEN) * belOpen(n-1)) --___
-           + (getProbability(CLOSED, DONT, CLOSED) * belClosed(n-1));   --	bel(Xn = is_closed)
-
-         --normaliser (eq. 2.49, 2.50, 2.51 combined)
-         normaliser := 1.0 / ((zOpenOpen * postBelOpen) + (zClosedClosed * postBelClosed));
-
-         --New belief of door state is assigned according to eq. 2.48
-         belOpen(n)   := normaliser * zOpenOpen * postBelOpen;
-         belClosed(n) := normaliser * zClosedClosed * postBelClosed;
+         --Tries to OPEN DOOR
+         temp := openDoor;
       end if;
+
+      --Posterior belief of door being open (eq. 2.46 in the book)
+
+      postBelOpen := (
+                      (getProbability(
+                      pastMStates(n)(0),   --Xn:   Current measured state of door
+                      action,
+                      pastMStates(n-1)(0)) --Xn-1: Previous measured state of door
+                      * (if pastMStates(n)(0) = OPEN
+                        then belOpen(n-1)
+                        else belClosed(n-1))
+                     )
+                      + (getProbability(
+                        pastMStates(n)(0),   --Xn:   Current measured state of door
+                        action,
+                        pastMStates(n-1)(1)) --NOT Xn-1: Inverse previous measured state of door
+                        * (if pastMStates(n)(1) = OPEN
+                          then belOpen(n-1)
+                          else belClosed(n-1))
+                       )
+                     );
+
+      --Posterior belief of door being closed (eq. 2.47)
+      postBelClosed := (
+                        (getProbability(
+                        pastMStates(n)(1),   --NOT Xn: Inverse current measured state of door
+                        action,
+                        pastMStates(n-1)(0)) --Xn-1: Previous measured state of door
+                        * (if pastMStates(n-1)(0) = OPEN
+                          then belOpen(n-1)
+                          else belClosed(n-1))
+                       )
+                        + (getProbability(
+                          pastMStates(n)(1),   --NOT Xn: Inverse current measured state of door
+                          action,
+                          pastMStates(n-1)(1)) --NOT Xn-1: Inverse previous measured state of door
+                          * (if pastMStates(n)(1) = OPEN
+                            then belOpen(n-1)
+                            else belClosed(n-1))
+                         )
+                       );
+
+      --normaliser (eq. 2.49, 2.50, 2.51 combined)
+      normaliser := 1.0 / ((zOpenOpen * postBelOpen) + (zOpenClosed * postBelClosed));
+
+      --New belief of door state is assigned according to eq. 2.48
+      belOpen(n)   := normaliser * zOpenOpen * postBelOpen;
+      belClosed(n) := normaliser * zOpenClosed * postBelClosed;
    end updateBelief;
 
-   --returns the current bel(Xn = is_open)
+   --returns the belief vector
    function getBelief return uniDist is
    begin
       return belOpen;
