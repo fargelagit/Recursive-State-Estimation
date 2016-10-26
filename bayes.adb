@@ -20,7 +20,7 @@ begin
 
    while(TRUE) loop
 
-      belief := funcs.getBelief; --gets belief vector
+      belief(n) := funcs.getBelief(n); --gets belief vector
 
       New_Line; Put_Line("t = " & n'Img);
 
@@ -66,8 +66,6 @@ begin
       doorStates(n) := funcs.getDoorStatus;
    end loop;
 
-   belief := funcs.getBelief;
-
    New_Line;
    Put_Line("| Time  |      Belief      |     Measured      | Actual  | Action |");
 
@@ -96,12 +94,5 @@ begin
       end if;
       New_Line;
    end loop;
-
-   --gets and prints the door state
-   if(funcs.getDoorStatus) then
-      Put_Line("The door was in fact OPEN");
-   else
-      Put_Line("The door was in fact CLOSED");
-   end if;
 
 end bayes;

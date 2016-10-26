@@ -5,8 +5,6 @@ package funcs is
 
    type doorState is (OPEN, CLOSED);
    type doorAction is (TRY, DONT);
-   type chanceType is (Z, U);
-
    type uniDist is array (0..99) of Uniformly_Distributed;
    type doorStates is array (0..1) of doorState;
    type stateArr is array (0..99) of doorStates;
@@ -14,26 +12,28 @@ package funcs is
 
    procedure Initialise;
 
+   procedure updateBelief(n : Natural;
+                          action : doorAction);
+
+
    function getMeasurement(n : Natural) return Boolean;
 
    function updateMeasurement return doorState;
 
-   function openDoor return Boolean;
 
    function getProbability(chance : doorState;
                             action : doorAction;
                             state : doorState) return Uniformly_Distributed;
 
-   procedure updateBelief(n : Natural; action : doorAction);
+   function openDoor return Boolean;
 
-   function getBelief return uniDist;
+   function getBelief (n : Natural) return Uniformly_Distributed;
 
    function getDoorStatus return Boolean;
 
 
 
 private
-   procedure setDoor;
 
    zOpenOpen, 					--probability of door being OPEN when MEASURED OPEN
    zClosedOpen,					--probability of door being OPEN when MEASURED CLOSED
